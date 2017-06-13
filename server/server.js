@@ -12,28 +12,30 @@ const port = process.env.PORT || 3000;
 // middleware
 app.use(bodyParser.json());
 
-// // http POST method
-// app.post('/todos', (req, res) => {
-//   var myTodo = new Todo({
-//     text: req.body.text
-//   });
-//
-//   myTodo.save().then((doc) => {
-//     res.send(doc); // show the user the saved document
-//   }, (e) => {
-//     res.status(400).send(e);
-//   });
-// });
-//
-// app.get('/todos', (req, res) => {
-//   Todo.find().then((todos) => {
-//     // setting it as an object makes it more flexible
-//     res.send({todos: todos});
-//   }, (e) => {
-//     res.status(400).send(e);
-//   })
-// });
+// http POST method
+app.post('/todos', (req, res) => {
+  var myTodo = new Todo({
+    text: req.body.text
+  });
 
+  myTodo.save().then((doc) => {
+    res.send(doc); // show the user the saved document
+  }, (e) => {
+    res.status(400).send(e);
+  });
+});
+
+// http GET method
+app.get('/todos', (req, res) => {
+  Todo.find().then((todos) => {
+    // setting it as an object makes it more flexible
+    res.send({todos: todos});
+  }, (e) => {
+    res.status(400).send(e);
+  })
+});
+
+// http GET /todos/:id
 app.get('/todos/:id', (req, res) => {
   var searchId = req.params.id;
   if (!ObjectID.isValid(searchId)) {
