@@ -1,6 +1,7 @@
-var express = require('express');
-var bodyParser = require('body-parser');
-var {ObjectID} = require('mongodb');
+const express = require('express');
+const bodyParser = require('body-parser');
+const {ObjectID} = require('mongodb');
+const _ = require('lodash');
 
 var {mongoose} = require('./db/mongoose');
 var {Todo} = require('./models/todo');
@@ -72,6 +73,34 @@ app.delete('/todos/:id', (req, res) => {
   });
 });
 
+// http PATCH method
+app.patch('/todos/:id', (req, res) => {
+  var searchId = req.params.id;
+  // creates an object composed of the picked object properties
+  var body = _.pick(req.body, ['text', 'completed']);
+
+  if (!ObjectID.isValid(searchId)) {
+    return res.status(404).send();
+  }
+
+  // completed is boolean AND it is true
+  if(_.isBoolean(body.completed) && body.completed) {
+    body.completedAt = new Date().getTime();
+  } else {
+    body.completed = false;
+    body.completedAt = null;
+  }
+  // body object now contains the properties that need to be updated
+  Todo.findByIdAndUpdate(searchId, {$set: body}, {new: true}).then((todo) => {
+    if (!todo) {
+      return res.sendStatus(404);
+    }
+
+    res.send({todo});
+  }).catch((e) => {
+    res.sendStatus(400);
+  })
+});
 
 app.listen(port, () => {
   console.log(`Started up at port ${port}`);
