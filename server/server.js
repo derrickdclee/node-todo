@@ -22,7 +22,7 @@ app.post('/todos', (req, res) => {
   myTodo.save().then((doc) => {
     res.send(doc); // show the user the saved document
   }, (e) => {
-    res.status(400).send(e);
+    res.sendStatus(400).send(e);
   });
 });
 
