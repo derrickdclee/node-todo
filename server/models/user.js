@@ -2,6 +2,8 @@ const mongoose = require('mongoose');
 const validator = require('validator'); // used for validating things
 const jwt = require('jsonwebtoken');
 const _ = require('lodash');
+const bcrypt = require('bcryptjs');
+
 
 var UserSchema = new mongoose.Schema({
   email: {
@@ -74,6 +76,25 @@ UserSchema.statics.findByToken = function(token) {
     'tokens.access': 'auth'
   });
 };
+
+// middleware to be called before User is saved to db
+UserSchema.pre('save', function(next) {
+  var user = this;
+
+  if (user.isModified('password')) {
+    // generate a salt, hash the password with the salt, and then save the
+    // hashed password to db
+    bcrypt.genSalt(10, (err, salt) => {
+      bcrypt.hash(user.password, salt, (err, hash) => {
+        user.password = hash;
+        next(); // note that this function call should be here!
+      });
+    });
+  } else {
+    next();
+  }
+});
+
 
 // creates User model
 var User = mongoose.model('User', UserSchema);
