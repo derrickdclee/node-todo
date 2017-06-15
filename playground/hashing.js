@@ -33,3 +33,4 @@ console.log(token);
 // if the token has been modified, then this will throw an error
 var decoded = jwt.verify(token, '123abc');
 console.log(decoded);
+console.log(typeof decoded);

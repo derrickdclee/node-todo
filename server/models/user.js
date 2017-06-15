@@ -22,6 +22,7 @@ var UserSchema = new mongoose.Schema({
     minlength: 6
   },
 
+  // tokens is an array of subdocuments
   tokens: [{
     access: {
       type: String,
@@ -53,6 +54,24 @@ UserSchema.methods.generateAuthToken = function() {
   // returning a Promise that eventually gets resolved with the value of token
   return this.save().then(() => {
     return token;
+  });
+};
+
+// this is hwo you define a model method
+UserSchema.statics.findByToken = function(token) {
+  var User = this;
+  var decoded;
+
+  try {
+    decoded = jwt.verify(token, 'abc123');
+  } catch(e) {
+    return Promise.reject(); // just return a promise that rejects!
+  }
+
+  return User.findOne({
+    _id: decoded._id,
+    'tokens.token': token,
+    'tokens.access': 'auth'
   });
 };
 

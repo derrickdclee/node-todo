@@ -8,12 +8,22 @@ const _ = require('lodash');
 var {mongoose} = require('./db/mongoose');
 var {Todo} = require('./models/todo');
 var {User} = require('./models/user');
+var {authenticate} = require('./middleware/authenticate.js');
 
 var app = express();
 const port = process.env.PORT;
 
-// middleware
+// using middleware
 app.use(bodyParser.json());
+
+// private route
+// using authenticate as middleware
+app.get('/users/me', authenticate, (req, res) => {
+  res.send(req.user);
+});
+
+
+
 
 // http POST method
 app.post('/todos', (req, res) => {
@@ -108,7 +118,8 @@ app.post('/users', (req, res) => {
   var userObj = _.pick(req.body, ['email', 'password']);
 
   var newUser = new User(userObj);
-  newUser.save().then(() => {
+  newUser.save()
+    .then(() => {
     return newUser.generateAuthToken();
   }).then((token) => {
     res.header('x-auth', token).send(newUser);
