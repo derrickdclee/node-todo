@@ -125,6 +125,17 @@ app.post('/users', (req, res) => {
   });
 });
 
+app.post('/users/login', (req, res) => {
+  var userObj = _.pick(req.body, ['email', 'password']);
+  User.findByCredentials(userObj.email, userObj.password).then((user) => {
+    return user.generateAuthToken().then((token) => {
+      res.header('x-auth', token).send(user);
+    });
+  }).catch((e) => {
+    res.sendStatus(400);
+  });
+});
+
 ////////////////////////////////////////////////////////////////////////////////
 app.listen(port, () => {
   console.log(`Started up at port ${port}`);

@@ -30,18 +30,20 @@ const todos = [{
   completedAt: 333
 }];
 
-const populateTodos = (done) => {
-  Todo.remove({}).then(() => {
-    return Todo.insertMany(todos);
-  }).then(() => done());
-};
-
 const populateUsers = (done) => {
   User.remove({}).then(() => {
     var userOne = new User(users[0]).save();
     var userTwo = new User(users[1]).save();
 
+    // Promise.all returns a single Promise that resolves
+    // when all of the promises resolve
     return Promise.all([userOne, userTwo])
+  }).then(() => done());
+};
+
+const populateTodos = (done) => {
+  Todo.remove({}).then(() => {
+    return Todo.insertMany(todos);
   }).then(() => done());
 };
 
