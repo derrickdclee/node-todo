@@ -1,5 +1,6 @@
 var {User} = require('./../models/user');
 
+// checks if the user is logged in
 // defining middleware
 var authenticate = (req, res, next) => {
   var token = req.header('x-auth');

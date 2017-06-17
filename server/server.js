@@ -16,16 +16,12 @@ const port = process.env.PORT;
 // using middleware
 app.use(bodyParser.json());
 
-// private route
-// using authenticate as middleware
-app.get('/users/me', authenticate, (req, res) => {
-  res.send(req.user);
-});
 
-// http POST method
-app.post('/todos', (req, res) => {
+// POST /todos
+app.post('/todos', authenticate, (req, res) => {
   var myTodo = new Todo({
-    text: req.body.text
+    text: req.body.text,
+    _creator: req.user._id
   });
 
   myTodo.save().then((doc) => {
@@ -35,27 +31,36 @@ app.post('/todos', (req, res) => {
   });
 });
 
-// http GET method
-app.get('/todos', (req, res) => {
-  Todo.find().then((todos) => {
-    // setting it as an object makes it more flexible
+// GET /todos
+app.get('/todos', authenticate, (req, res) => {
+  Todo.find({
+    _creator: req.user._id
+  }).then((todos) => {
+    // setting it as an object makes it mor e flexible
     res.send({todos: todos});
   }, (e) => {
     res.status(400).send(e);
   })
 });
 
-// http GET /todos/:id
-app.get('/todos/:id', (req, res) => {
+// GET /todos/:id
+app.get('/todos/:id', authenticate, (req, res) => {
   var searchId = req.params.id;
   if (!ObjectID.isValid(searchId)) {
     return res.status(404).send();
   }
-  Todo.findById(searchId).then((todo) => {
+
+  // if we just search by searchId, then anyone with the Id can
+  // access the todo and modify it
+
+  // so we findOne instead
+  Todo.findOne({
+    _id: searchId,
+    _creator: req.user._id // VERY important
+  }).then((todo) => {
     if (!todo) {
       res.sendStatus(404);
     }
-    console.log(JSON.stringify(todo, undefined, 3));
     res.send({
       todo: todo
     });
@@ -64,15 +69,18 @@ app.get('/todos/:id', (req, res) => {
   });
 });
 
-// http DELETE method
-app.delete('/todos/:id', (req, res) => {
+// DELETE /toods/:id
+app.delete('/todos/:id', authenticate, (req, res) => {
   var searchId = req.params.id;
 
   if (!ObjectID.isValid(searchId)) {
     return res.sendStatus(404);
   }
 
-  Todo.findByIdAndRemove(searchId).then((doc) => {
+  Todo.findOneAndRemove({
+    _id: searchId,
+    _creator: req.user._id
+  }).then((doc) => {
     if (!doc) {
       return res.sendStatus(404);
     }
@@ -82,8 +90,8 @@ app.delete('/todos/:id', (req, res) => {
   });
 });
 
-// http PATCH method
-app.patch('/todos/:id', (req, res) => {
+// PATCH /todos/:id
+app.patch('/todos/:id', authenticate, (req, res) => {
   var searchId = req.params.id;
   // creates an object composed of the picked object properties
   var body = _.pick(req.body, ['text', 'completed']);
@@ -100,7 +108,14 @@ app.patch('/todos/:id', (req, res) => {
     body.completedAt = null;
   }
   // body object now contains the properties that need to be updated
-  Todo.findByIdAndUpdate(searchId, {$set: body}, {new: true}).then((todo) => {
+  Todo.findOneAndUpdate({
+    _id: searchId,
+    _creator: req.user.id
+  }, {
+    $set: body
+  }, {
+    new: true
+  }).then((todo) => {
     if (!todo) {
       return res.sendStatus(404);
     }
@@ -111,6 +126,14 @@ app.patch('/todos/:id', (req, res) => {
   })
 });
 
+// GET /users/me
+// private route
+// using authenticate as middleware
+app.get('/users/me', authenticate, (req, res) => {
+  res.send(req.user);
+});
+
+// POST /users
 app.post('/users', (req, res) => {
   var userObj = _.pick(req.body, ['email', 'password']);
 
@@ -125,6 +148,7 @@ app.post('/users', (req, res) => {
   });
 });
 
+// POST /users/login
 app.post('/users/login', (req, res) => {
   var userObj = _.pick(req.body, ['email', 'password']);
   User.findByCredentials(userObj.email, userObj.password).then((user) => {
@@ -136,6 +160,7 @@ app.post('/users/login', (req, res) => {
   });
 });
 
+// DELETE /users/me/token
 app.delete('/users/me/token', authenticate, (req, res) => {
   req.user.removeToken(req.token).then(() => {
     res.sendStatus(200);
